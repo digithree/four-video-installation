@@ -6,7 +6,7 @@
 
 package fourvideoinstallation;
 
-import java.util.Calendar;
+import java.util.prefs.Preferences;
 import javafx.animation.ParallelTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
@@ -48,10 +48,10 @@ public class FourVideoInstallation extends Application {
     };
     
     private final Duration []videoPreviewMarkers = {
-        Duration.seconds(2649), Duration.seconds(2660),
-        Duration.seconds(874), Duration.seconds(883),
-        Duration.seconds(1570), Duration.seconds(1580),
-        Duration.seconds(3023), Duration.seconds(3033)
+        Duration.seconds(150), Duration.seconds(160),
+        Duration.seconds(100), Duration.seconds(110),
+        Duration.seconds(200), Duration.seconds(210),
+        Duration.seconds(80), Duration.seconds(90)
     };
     
     private Duration []videoEndMarkers = new Duration[4];
@@ -62,7 +62,8 @@ public class FourVideoInstallation extends Application {
     private float ANIMATION_DURATION_SHORT = 500.f;
     private double VIDEO_LARGE_SCALE_FACTOR = 2;
     
-    private double videoHeighRatio = 0.56111111111111;
+    // videoHeightRatio calculated by dividing height by width
+    private double videoHeightRatio = 0.5625;
     
     private int videoSelected = -1;
     
@@ -76,24 +77,14 @@ public class FourVideoInstallation extends Application {
     private final long BUTTON_FREEZE_WAIT_BACK = 2000; //millis
     private boolean animationFinished = true;
     
-    /*
-    private final String []mediaUrls = {
-        "file:/Users/simonkenny/Documents/rnd/oow2010-2-0.flv",
-        "file:/Users/simonkenny/Documents/rnd/oow2010-2-1.flv",
-        "file:/Users/simonkenny/Documents/rnd/oow2010-2-2.flv",
-        "file:/Users/simonkenny/Documents/rnd/oow2010-2-3.flv"
-    };
-    */
+    String path = "file:/Users/simonkenny/Documents/Freelance/Gerald/videos/draft2/";
     
     private final String []mediaUrls = {
-        "file:/Users/simonkenny/Downloads/trueDetective/true.detective.s01e04.hdtv.x264-2hd.mp4",
-        "file:/Users/simonkenny/Downloads/trueDetective/true.detective.s01e05.hdtv.x264-killers.mp4",
-        "file:/Users/simonkenny/Downloads/trueDetective/true.detective.s01e06.hdtv.x264-2hd.mp4",
-        "file:/Users/simonkenny/Downloads/trueDetective/true.detective.s01e07.hdtv.x264-killers.mp4"
+        "Start_GB_16_9_with_Audio.mp4",
+        "North_GB_16_9_with_Audio.mp4",
+        "South_GB_Final_06082014.mp4",
+        "Start_GB_16_9_with_Audio.mp4"
     };
-    
-    //private final String vid = "file:/Users/simonkenny/Downloads/North.m4v";
-    //private final String []mediaUrls = { vid, vid, vid, vid };
     
     private Stage stage;
     
@@ -106,7 +97,11 @@ public class FourVideoInstallation extends Application {
         fourVideoPane.setAlignment(Pos.CENTER);
         
         for( int i = 0 ; i < 4 ; i++ ) {
-            Media media = new Media(mediaUrls[i]);
+            /*
+            Media media = new Media(FourVideoInstallation.class
+                    .getResource(mediaUrls[i]).toExternalForm());
+            */
+            Media media = new Media(path+mediaUrls[i]);
             mediaPlayer[i] = new MediaPlayer(media);
             videoEndMarkers[i] = mediaPlayer[i].getStopTime();
             mediaPlayer[i].setAutoPlay(true);
@@ -163,7 +158,7 @@ public class FourVideoInstallation extends Application {
                 //extraTranslateX = (smallBounds[0].getMaxX()-smallBounds[0].getMinX()) / 2;
                 //extraTranslateY = (smallBounds[0].getMaxY()-smallBounds[0].getMinY());
                 extraTranslateX = mediaView[0].getBoundsInLocal().getWidth()/2;
-                extraTranslateY = videoHeighRatio * extraTranslateX;
+                extraTranslateY = videoHeightRatio * extraTranslateX;
                 System.out.println("extraTranslate: "+extraTranslateX+", "+extraTranslateY);
                 //extraTranslateY = 1000;
             }
@@ -183,11 +178,11 @@ public class FourVideoInstallation extends Application {
                     printMediaPlayerInfo();
                 } else if( t.getCode() == KeyCode.W ) {
                     videoSelect = 0;
-                } else if( t.getCode() == KeyCode.E ) {
+                } else if( t.getCode() == KeyCode.E && videoSelected == -1 ) {
                     videoSelect = 1;
-                } else if( t.getCode() == KeyCode.S ) {
+                } else if( t.getCode() == KeyCode.S && videoSelected == -1 ) {
                     videoSelect = 2;
-                } else if( t.getCode() == KeyCode.D ) {
+                } else if( t.getCode() == KeyCode.D && videoSelected == -1 ) {
                     videoSelect = 3;
                 }
                 // apply transition
@@ -212,10 +207,9 @@ public class FourVideoInstallation extends Application {
                                                 +" for fullscreen playback");
                                         mediaPlayer[videoSelected].stop();
                                         mediaPlayer[videoSelected].setStartTime(Duration.seconds(0));
-                                        //mediaPlayer[videoSelected].setStopTime(
-                                        //        videoEndMarkers[videoSelected]);
-                                        // TODO : make this full length
-                                        mediaPlayer[videoSelected].setStopTime(Duration.seconds(20));
+                                        mediaPlayer[videoSelected].setStopTime(
+                                                videoEndMarkers[videoSelected]);
+                                        //mediaPlayer[videoSelected].setStopTime(Duration.seconds(20));
                                         mediaPlayer[videoSelected].seek(Duration.seconds(0));
                                         mediaPlayer[videoSelected].setOnEndOfMedia(new Runnable() {
                                             @Override public void run() {
