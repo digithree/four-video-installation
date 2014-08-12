@@ -96,6 +96,16 @@ public class FourVideoInstallation extends Application {
         fourVideoPane.setPrefSize(Double.MAX_VALUE, Double.MAX_VALUE);
         fourVideoPane.setAlignment(Pos.CENTER);
         
+        // resize
+        Screen screen = Screen.getPrimary();
+        screenBounds = screen.getVisualBounds();
+        stage.setX(0);
+        stage.setY(0);
+        stage.setWidth(screenBounds.getWidth());
+        stage.setHeight(screenBounds.getHeight());
+        VIDEO_WIDTH_SMALL = (int)(screenBounds.getWidth()/2.f);
+        VIDEO_WIDTH_LARGE = VIDEO_WIDTH_SMALL;
+        
         for( int i = 0 ; i < 4 ; i++ ) {
             /*
             Media media = new Media(FourVideoInstallation.class
@@ -115,14 +125,6 @@ public class FourVideoInstallation extends Application {
             
             fourVideoPane.getChildren().add(mediaView[i]);
         }
-        
-        // resize
-        Screen screen = Screen.getPrimary();
-        screenBounds = screen.getVisualBounds();
-        stage.setX(0);
-        stage.setY(0);
-        stage.setWidth(screenBounds.getWidth());
-        stage.setHeight(screenBounds.getHeight());
         fourVideoPane.setPrefSize(screenBounds.getWidth(), screenBounds.getHeight());
 
         final Scene scene = new Scene(fourVideoPane);
