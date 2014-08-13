@@ -6,6 +6,9 @@
 
 package fourvideoinstallation;
 
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javafx.animation.ParallelTransition;
 import javafx.animation.ScaleTransition;
@@ -29,12 +32,15 @@ import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.controlsfx.dialog.Dialogs;
 
 /**
  *
  * @author simonkenny
  */
 public class FourVideoInstallation extends Application {
+    
+    private final String PREF_PATH = "FVI_PATH";
     
     private FlowPane fourVideoPane;
     private MediaPlayer []mediaPlayer = new MediaPlayer[4];
@@ -48,10 +54,10 @@ public class FourVideoInstallation extends Application {
     };
     
     private final Duration []videoPreviewMarkers = {
+        Duration.seconds(0), Duration.seconds(34),
         Duration.seconds(150), Duration.seconds(160),
         Duration.seconds(100), Duration.seconds(110),
-        Duration.seconds(200), Duration.seconds(210),
-        Duration.seconds(80), Duration.seconds(90)
+        Duration.seconds(200), Duration.seconds(210)
     };
     
     private Duration []videoEndMarkers = new Duration[4];
@@ -77,19 +83,49 @@ public class FourVideoInstallation extends Application {
     private final long BUTTON_FREEZE_WAIT_BACK = 2000; //millis
     private boolean animationFinished = true;
     
-    String path = "file:/Users/simonkenny/Documents/Freelance/Gerald/videos/draft2/";
+    // /Users/simonkenny/Documents/Freelance/Gerald/videos/draft2/
+    String path = null;
     
     private final String []mediaUrls = {
+        "Into_the_Deep_clip.mp4",
         "Start_GB_16_9_with_Audio.mp4",
         "North_GB_16_9_with_Audio.mp4",
-        "South_GB_Final_06082014.mp4",
-        "Start_GB_16_9_with_Audio.mp4"
+        "South_GB_Final_06082014.mp4"
     };
     
     private Stage stage;
     
     @Override
     public void start(Stage stage) {
+        Preferences prefs = Preferences.userNodeForPackage(FourVideoInstallation.class);
+        path = prefs.get(PREF_PATH, null);
+        if( path == null ) {
+            // do first time stuff
+            // get pin
+            Optional<String> response = Dialogs.create()
+                    .owner(stage)
+                    .title("First time setup")
+                    .masthead("Please locate the path where the videos are stored and enter")
+                    .message("Path:")
+                    .showTextInput();
+            // One way to get the response value.
+            if (response.isPresent()) {
+                path = response.get();
+            }
+            if( path == null ) {
+                // error
+                Dialogs.create()
+                        .owner(null)
+                        .title("Error")
+                        .masthead("Invalid path")
+                        .message("Couldn't add path, please restart and re-enter")
+                        .showError();
+                Platform.exit();
+                return;
+            }
+            prefs.put(PREF_PATH, path);
+        }
+        
         this.stage = stage;
         
         fourVideoPane = new FlowPane();
@@ -111,7 +147,7 @@ public class FourVideoInstallation extends Application {
             Media media = new Media(FourVideoInstallation.class
                     .getResource(mediaUrls[i]).toExternalForm());
             */
-            Media media = new Media(path+mediaUrls[i]);
+            Media media = new Media("file:"+path+mediaUrls[i]);
             mediaPlayer[i] = new MediaPlayer(media);
             videoEndMarkers[i] = mediaPlayer[i].getStopTime();
             mediaPlayer[i].setAutoPlay(true);
