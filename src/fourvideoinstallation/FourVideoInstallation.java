@@ -6,6 +6,8 @@
 
 package fourvideoinstallation;
 
+import java.io.File;
+import java.net.MalformedURLException;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,6 +22,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
@@ -54,10 +57,10 @@ public class FourVideoInstallation extends Application {
     };
     
     private final Duration []videoPreviewMarkers = {
-        Duration.seconds(0), Duration.seconds(34),
-        Duration.seconds(150), Duration.seconds(160),
-        Duration.seconds(100), Duration.seconds(110),
-        Duration.seconds(200), Duration.seconds(210)
+        Duration.seconds(150), Duration.seconds(161),
+        Duration.seconds(100), Duration.seconds(113),
+        Duration.seconds(200), Duration.seconds(217),
+        Duration.seconds(10), Duration.seconds(33)
     };
     
     private Duration []videoEndMarkers = new Duration[4];
@@ -83,14 +86,13 @@ public class FourVideoInstallation extends Application {
     private final long BUTTON_FREEZE_WAIT_BACK = 2000; //millis
     private boolean animationFinished = true;
     
-    // /Users/simonkenny/Documents/Freelance/Gerald/videos/draft2/
     String path = null;
     
     private final String []mediaUrls = {
-        "Into_the_Deep_clip.mp4",
-        "Start_GB_16_9_with_Audio.mp4",
-        "North_GB_16_9_with_Audio.mp4",
-        "South_GB_Final_06082014.mp4"
+        "1.mp4",
+        "2.mp4",
+        "3.mp4",
+        "4.mp4"
     };
     
     private Stage stage;
@@ -98,10 +100,10 @@ public class FourVideoInstallation extends Application {
     @Override
     public void start(Stage stage) {
         Preferences prefs = Preferences.userNodeForPackage(FourVideoInstallation.class);
+        //prefs.remove(PREF_PATH);
         path = prefs.get(PREF_PATH, null);
         if( path == null ) {
             // do first time stuff
-            // get pin
             Optional<String> response = Dialogs.create()
                     .owner(stage)
                     .title("First time setup")
@@ -131,6 +133,7 @@ public class FourVideoInstallation extends Application {
         fourVideoPane = new FlowPane();
         fourVideoPane.setPrefSize(Double.MAX_VALUE, Double.MAX_VALUE);
         fourVideoPane.setAlignment(Pos.CENTER);
+        fourVideoPane.setCursor(Cursor.NONE);
         
         // resize
         Screen screen = Screen.getPrimary();
@@ -147,7 +150,12 @@ public class FourVideoInstallation extends Application {
             Media media = new Media(FourVideoInstallation.class
                     .getResource(mediaUrls[i]).toExternalForm());
             */
-            Media media = new Media("file:"+path+mediaUrls[i]);
+            Media media = null;
+            try {
+                media = new Media(new File(path+mediaUrls[i]).toURI().toURL().toExternalForm());
+            } catch (MalformedURLException ex) {
+                Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
+            }
             mediaPlayer[i] = new MediaPlayer(media);
             videoEndMarkers[i] = mediaPlayer[i].getStopTime();
             mediaPlayer[i].setAutoPlay(true);
