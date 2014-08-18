@@ -6,6 +6,8 @@
 
 package fourvideoinstallation;
 
+import java.awt.AWTException;
+import java.awt.Robot;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.Optional;
@@ -294,6 +296,13 @@ public class FourVideoInstallation extends Application {
                 }
             }
         });
+        
+        try {
+            // finally, move mouse
+            (new Robot()).mouseMove(0, (int) (screenBounds.getHeight()-1));
+        } catch (AWTException ex) {
+            Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
