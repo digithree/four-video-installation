@@ -46,7 +46,6 @@ public class FourVideoInstallation extends Application {
     private final String PREF_PATH = "FVI_PATH";
     
     private FlowPane fourVideoPane;
-    private MediaPlayer []mediaPlayer = new MediaPlayer[4];
     private MediaView []mediaView = new MediaView[4];
     private Group root = new Group();
     
@@ -62,8 +61,6 @@ public class FourVideoInstallation extends Application {
         Duration.seconds(200), Duration.seconds(217),
         Duration.seconds(10), Duration.seconds(33)
     };
-    
-    private Duration []videoEndMarkers = new Duration[4];
     
     private int VIDEO_WIDTH_SMALL = 600;
     private int VIDEO_WIDTH_LARGE = 600;
@@ -92,6 +89,13 @@ public class FourVideoInstallation extends Application {
         "1.mp4",
         "2.mp4",
         "3.mp4",
+        "4.mp4"
+    };
+    
+    private final String []mediaThumbUrls = {
+        "1-thumb.mp4",
+        "2-thumb.mp4",
+        "3-thumb.mp4",
         "4.mp4"
     };
     
@@ -145,6 +149,7 @@ public class FourVideoInstallation extends Application {
         VIDEO_WIDTH_SMALL = (int)(screenBounds.getWidth()/2.f);
         VIDEO_WIDTH_LARGE = VIDEO_WIDTH_SMALL;
         
+        // create media, media player and media view for thumbs
         for( int i = 0 ; i < 4 ; i++ ) {
             /*
             Media media = new Media(FourVideoInstallation.class
@@ -152,18 +157,23 @@ public class FourVideoInstallation extends Application {
             */
             Media media = null;
             try {
-                media = new Media(new File(path+mediaUrls[i]).toURI().toURL().toExternalForm());
+                media = new Media(new File(path+mediaThumbUrls[i]).toURI().toURL().toExternalForm());
             } catch (MalformedURLException ex) {
                 Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
             }
-            mediaPlayer[i] = new MediaPlayer(media);
-            videoEndMarkers[i] = mediaPlayer[i].getStopTime();
-            mediaPlayer[i].setAutoPlay(true);
-            mediaPlayer[i].setStartTime(videoPreviewMarkers[i*2]);
-            mediaPlayer[i].setStopTime(videoPreviewMarkers[(i*2)+1]);
-            mediaPlayer[i].setMute(true);
-            mediaPlayer[i].setCycleCount(MediaPlayer.INDEFINITE);
-            mediaView[i] = new MediaView(mediaPlayer[i]);
+            MediaPlayer mediaPlayer = new MediaPlayer(media);
+            mediaPlayer.setAutoPlay(true);
+            //mediaPlayer[i].setStartTime(videoPreviewMarkers[(i*2)]);
+            //mediaPlayer[i].setStopTime(videoPreviewMarkers[(i*2)+1]);
+            mediaPlayer.setMute(true);
+            mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+            mediaPlayer.setOnError(new Runnable() {    
+                @Override
+                public void run() {
+                    System.out.println(mediaPlayer.errorProperty().get().getMessage());
+                }
+            });
+            mediaView[i] = new MediaView(mediaPlayer);
             //mediaView.setPreserveRatio(false);
             mediaView[i].setFitWidth(VIDEO_WIDTH_SMALL);
             
@@ -216,8 +226,9 @@ public class FourVideoInstallation extends Application {
                 int videoSelect = -1;
                 if( t.getCode() == KeyCode.ESCAPE )
                 {
-                    for( MediaPlayer player : mediaPlayer ) {
-                        player.stop();
+                    for( MediaView mv : mediaView ) {
+                        mv.getMediaPlayer().stop();
+                        mv.getMediaPlayer().dispose();
                     }
                     stage.close();
                 } else if( t.getCode() == KeyCode.SPACE ) {
@@ -228,9 +239,10 @@ public class FourVideoInstallation extends Application {
                     videoSelect = 1;
                 } else if( t.getCode() == KeyCode.S && videoSelected == -1 ) {
                     videoSelect = 2;
-                } else if( t.getCode() == KeyCode.D && videoSelected == -1 ) {
-                    videoSelect = 3;
-                }
+                } //else if( t.getCode() == KeyCode.D && videoSelected == -1 ) {
+                  //  videoSelect = 3;
+                //}
+                // TODO : enable fourth video when given to us
                 // apply transition
                 if( videoSelect >= 0 && animationFinished ) {
                     Task<Void> task = new Task<Void>() {
@@ -251,18 +263,40 @@ public class FourVideoInstallation extends Application {
                                     if( videoSelected != -1 ) {
                                         System.out.println("Setting video "+videoSelected
                                                 +" for fullscreen playback");
-                                        mediaPlayer[videoSelected].stop();
-                                        mediaPlayer[videoSelected].setStartTime(Duration.seconds(0));
-                                        mediaPlayer[videoSelected].setStopTime(
-                                                videoEndMarkers[videoSelected]);
+                                        mediaView[videoSelected].getMediaPlayer().stop();
+                                        //mediaView[videoSelected].setMediaPlayer(null);
+                                        // set new media for player
+                                        Media media = null;
+                                        try {
+                                            media = new Media(new File(path+mediaUrls[videoSelected]).toURI().toURL().toExternalForm());
+                                        } catch (MalformedURLException ex) {
+                                            Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
+                                        MediaPlayer mediaPlayer = new MediaPlayer(media);
+                                        mediaView[videoSelected].setMediaPlayer(mediaPlayer);
+                                        // setup up start
+                                        //mediaPlayer[videoSelected].setStartTime(Duration.seconds(0));
+                                        //mediaPlayer[videoSelected].setStopTime(
+                                        //        videoEndMarkers[videoSelected]);
                                         //mediaPlayer[videoSelected].setStopTime(Duration.seconds(20));
-                                        mediaPlayer[videoSelected].seek(Duration.seconds(0));
-                                        mediaPlayer[videoSelected].setOnEndOfMedia(new Runnable() {
+                                        //mediaPlayer[videoSelected].seek(Duration.seconds(0));
+                                        mediaPlayer.setOnEndOfMedia(new Runnable() {
                                             @Override public void run() {
                                                 System.out.println("end of playback");
                                                 animationFinished = false;
                                                 Platform.runLater(new Runnable() {
                                                     @Override public void run() {
+                                                        Media media = null;
+                                                        try {
+                                                            media = new Media(new File(path+mediaThumbUrls[videoSelected]).toURI().toURL().toExternalForm());
+                                                        } catch (MalformedURLException ex) {
+                                                            Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
+                                                        }
+                                                        MediaPlayer mediaPlayer = new MediaPlayer(media);
+                                                        mediaPlayer.setMute(true);
+                                                        mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+                                                        mediaPlayer.setAutoPlay(true);
+                                                        mediaView[videoSelected].setMediaPlayer(mediaPlayer);
                                                         backToFourVideos();
                                                         try {
                                                             Thread.sleep(BUTTON_FREEZE_WAIT_BACK);
@@ -276,9 +310,9 @@ public class FourVideoInstallation extends Application {
                                                 });
                                             }
                                         });
-                                        mediaPlayer[videoSelected].setMute(false);
-                                        mediaPlayer[videoSelected].setCycleCount(0);
-                                        mediaPlayer[videoSelected].play();
+                                        //mediaPlayer[videoSelected].setMute(false);
+                                        mediaPlayer.setCycleCount(0);
+                                        mediaPlayer.play();
                                     }
                             //    }
                             //});
@@ -304,13 +338,6 @@ public class FourVideoInstallation extends Application {
     }
     
     private void backToFourVideos() {
-        // first mute current playing video
-        mediaPlayer[videoSelected].setStartTime(videoPreviewMarkers[videoSelected*2]);
-        mediaPlayer[videoSelected].setStopTime(videoPreviewMarkers[(videoSelected*2)+1]);
-        mediaPlayer[videoSelected].setMute(true);
-        mediaPlayer[videoSelected].setCycleCount(MediaPlayer.INDEFINITE);
-        mediaPlayer[videoSelected].play();
-        mediaPlayer[videoSelected].setOnEndOfMedia(null);
         // back to seeing all video thumbnail clips
         ScaleTransition shrink = null;
         ScaleTransition []grow = new ScaleTransition[3];
@@ -398,8 +425,8 @@ public class FourVideoInstallation extends Application {
     
     private void printMediaPlayerInfo() {
         int count = 0;
-            for( MediaPlayer player : mediaPlayer ) {
-                MediaPlayer.Status status = player.getStatus();
+            for( MediaView mv : mediaView ) {
+                MediaPlayer.Status status = mv.getMediaPlayer().getStatus();
                 String statusStr = "Undefined";
                 if( status == MediaPlayer.Status.DISPOSED ) {
                     statusStr = "Disposed";
