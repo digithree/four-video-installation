@@ -28,6 +28,7 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
@@ -45,8 +46,9 @@ public class FourVideoInstallation extends Application {
     
     private final String PREF_PATH = "FVI_PATH";
     
-    private FlowPane fourVideoPane;
-    private MediaView []mediaView = new MediaView[4];
+    private Pane fourVideoPane;
+    private MediaView []thumbMediaViews = new MediaView[4];
+    private MediaView mainMediaView = null;
     private Group root = new Group();
     
     Rectangle2D screenBounds;
@@ -55,29 +57,11 @@ public class FourVideoInstallation extends Application {
         KeyCode.W, KeyCode.A, KeyCode.S, KeyCode.D
     };
     
-    private final Duration []videoPreviewMarkers = {
-        Duration.seconds(150), Duration.seconds(161),
-        Duration.seconds(100), Duration.seconds(113),
-        Duration.seconds(200), Duration.seconds(217),
-        Duration.seconds(10), Duration.seconds(33)
-    };
-    
-    private int VIDEO_WIDTH_SMALL = 600;
-    private int VIDEO_WIDTH_LARGE = 600;
-    private float ANIMATION_DURATION_LONG = 1000.f;
-    private float ANIMATION_DURATION_SHORT = 500.f;
-    private double VIDEO_LARGE_SCALE_FACTOR = 2;
-    
-    // videoHeightRatio calculated by dividing height by width
-    private double videoHeightRatio = 0.5625;
+    private float ANIMATION_DURATION = 500.f;
     
     private int videoSelected = -1;
     
     private ParallelTransition scaleTransitions;
-    
-    private Bounds []smallBounds = new Bounds[4];
-    private double extraTranslateX = 0;
-    private double extraTranslateY = 0;
     
     private final long BUTTON_FREEZE_WAIT_EXPAND = 2000; //millis
     private final long BUTTON_FREEZE_WAIT_BACK = 2000; //millis
@@ -134,9 +118,8 @@ public class FourVideoInstallation extends Application {
         
         this.stage = stage;
         
-        fourVideoPane = new FlowPane();
+        fourVideoPane = new Pane();
         fourVideoPane.setPrefSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        fourVideoPane.setAlignment(Pos.CENTER);
         fourVideoPane.setCursor(Cursor.NONE);
         
         // resize
@@ -146,8 +129,6 @@ public class FourVideoInstallation extends Application {
         stage.setY(0);
         stage.setWidth(screenBounds.getWidth());
         stage.setHeight(screenBounds.getHeight());
-        VIDEO_WIDTH_SMALL = (int)(screenBounds.getWidth()/2.f);
-        VIDEO_WIDTH_LARGE = VIDEO_WIDTH_SMALL;
         
         // create media, media player and media view for thumbs
         for( int i = 0 ; i < 4 ; i++ ) {
@@ -163,8 +144,6 @@ public class FourVideoInstallation extends Application {
             }
             MediaPlayer mediaPlayer = new MediaPlayer(media);
             mediaPlayer.setAutoPlay(true);
-            //mediaPlayer[i].setStartTime(videoPreviewMarkers[(i*2)]);
-            //mediaPlayer[i].setStopTime(videoPreviewMarkers[(i*2)+1]);
             mediaPlayer.setMute(true);
             mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
             mediaPlayer.setOnError(new Runnable() {    
@@ -173,11 +152,12 @@ public class FourVideoInstallation extends Application {
                     System.out.println(mediaPlayer.errorProperty().get().getMessage());
                 }
             });
-            mediaView[i] = new MediaView(mediaPlayer);
+            thumbMediaViews[i] = new MediaView(mediaPlayer);
             //mediaView.setPreserveRatio(false);
-            mediaView[i].setFitWidth(VIDEO_WIDTH_SMALL);
-            
-            fourVideoPane.getChildren().add(mediaView[i]);
+            thumbMediaViews[i].setFitWidth(screenBounds.getWidth()/2);
+            thumbMediaViews[i].relocate((screenBounds.getWidth()/2)*((int)i%2), 
+                    (screenBounds.getHeight()/2)*((int)i/2));
+            fourVideoPane.getChildren().add(thumbMediaViews[i]);
         }
         fourVideoPane.setPrefSize(screenBounds.getWidth(), screenBounds.getHeight());
 
@@ -188,6 +168,7 @@ public class FourVideoInstallation extends Application {
         stage.show();
         stage.setFullScreen(true);
         
+        /*
         Platform.runLater(new Runnable() {
             @Override public void run() {
                 // debug width output
@@ -198,11 +179,11 @@ public class FourVideoInstallation extends Application {
                 );
                 System.out.println("Screen is:");
                 System.out.println("\t"+(screenBounds.getWidth()-(VIDEO_WIDTH_SMALL*2))
-                        +"\t"+mediaView[0].getBoundsInLocal().getWidth()
+                        +"\t"+thumbMediaViews[0].getBoundsInLocal().getWidth()
                 );
                 System.out.println("Coordinates of MediaViews:");
                 int count = 0;
-                for( MediaView mv : mediaView ) {
+                for( MediaView mv : thumbMediaViews ) {
                     System.out.println("\t"+mv.getBoundsInParent().getMinX()
                             +" x "+mv.getBoundsInParent().getMinY());
                     smallBounds[count++] = mv.getBoundsInParent();
@@ -213,22 +194,24 @@ public class FourVideoInstallation extends Application {
                 // calculate the extra translation need to make full screen videos centered
                 //extraTranslateX = (smallBounds[0].getMaxX()-smallBounds[0].getMinX()) / 2;
                 //extraTranslateY = (smallBounds[0].getMaxY()-smallBounds[0].getMinY());
-                extraTranslateX = mediaView[0].getBoundsInLocal().getWidth()/2;
+                extraTranslateX = thumbMediaViews[0].getBoundsInLocal().getWidth()/2;
                 extraTranslateY = videoHeightRatio * extraTranslateX;
                 System.out.println("extraTranslate: "+extraTranslateX+", "+extraTranslateY);
                 //extraTranslateY = 1000;
             }
         });
-        
+        */
         scene.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent t) {
                 int videoSelect = -1;
                 if( t.getCode() == KeyCode.ESCAPE )
                 {
-                    for( MediaView mv : mediaView ) {
-                        mv.getMediaPlayer().stop();
-                        mv.getMediaPlayer().dispose();
+                    for( MediaView mv : thumbMediaViews ) {
+                        if( mv.getMediaPlayer() != null ) {
+                            mv.getMediaPlayer().stop();
+                            mv.getMediaPlayer().dispose();
+                        }
                     }
                     stage.close();
                 } else if( t.getCode() == KeyCode.SPACE ) {
@@ -245,6 +228,7 @@ public class FourVideoInstallation extends Application {
                 // TODO : enable fourth video when given to us
                 // apply transition
                 if( videoSelect >= 0 && animationFinished ) {
+                    /*
                     Task<Void> task = new Task<Void>() {
                         @Override protected Void call() throws Exception {
                             animationFinished = false;
@@ -256,70 +240,52 @@ public class FourVideoInstallation extends Application {
                                     return null;
                                 }
                             }
-                            //System.out.println("intertrial wait over, moving to next trial");
-                            //Platform.runLater(new Runnable() {
-                            //    @Override public void run() {
-                                    animationFinished = true;
-                                    if( videoSelected != -1 ) {
-                                        System.out.println("Setting video "+videoSelected
-                                                +" for fullscreen playback");
-                                        mediaView[videoSelected].getMediaPlayer().stop();
-                                        //mediaView[videoSelected].setMediaPlayer(null);
-                                        // set new media for player
-                                        Media media = null;
-                                        try {
-                                            media = new Media(new File(path+mediaUrls[videoSelected]).toURI().toURL().toExternalForm());
-                                        } catch (MalformedURLException ex) {
-                                            Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
-                                        }
-                                        MediaPlayer mediaPlayer = new MediaPlayer(media);
-                                        mediaView[videoSelected].setMediaPlayer(mediaPlayer);
-                                        // setup up start
-                                        //mediaPlayer[videoSelected].setStartTime(Duration.seconds(0));
-                                        //mediaPlayer[videoSelected].setStopTime(
-                                        //        videoEndMarkers[videoSelected]);
-                                        //mediaPlayer[videoSelected].setStopTime(Duration.seconds(20));
-                                        //mediaPlayer[videoSelected].seek(Duration.seconds(0));
-                                        mediaPlayer.setOnEndOfMedia(new Runnable() {
+                            
+                            animationFinished = true;
+                            if( videoSelected != -1 ) {
+                                System.out.println("Setting video "+videoSelected
+                                        +" for fullscreen playback");
+                                // stop and remove old media
+                                //thumbMediaViews[videoSelected].getMediaPlayer().stop();
+                                //fourVideoPane.getChildren().remove(thumbMediaViews[videoSelected]);
+                                // set new media for player
+                                Media media = null;
+                                try {
+                                    media = new Media(new File(path+mediaUrls[videoSelected]).toURI().toURL().toExternalForm());
+                                } catch (MalformedURLException ex) {
+                                    Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                                MediaPlayer mediaPlayer = new MediaPlayer(media);
+                                mediaPlayer.setCycleCount(0);
+                                mediaPlayer.setAutoPlay(true);
+                                mediaPlayer.setCycleCount(0);
+                                mediaPlayer.setOnEndOfMedia(new Runnable() {
+                                    @Override public void run() {
+                                        System.out.println("end of playback");
+                                        animationFinished = false;
+                                        Platform.runLater(new Runnable() {
                                             @Override public void run() {
-                                                System.out.println("end of playback");
-                                                animationFinished = false;
-                                                Platform.runLater(new Runnable() {
-                                                    @Override public void run() {
-                                                        Media media = null;
-                                                        try {
-                                                            media = new Media(new File(path+mediaThumbUrls[videoSelected]).toURI().toURL().toExternalForm());
-                                                        } catch (MalformedURLException ex) {
-                                                            Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
-                                                        }
-                                                        MediaPlayer mediaPlayer = new MediaPlayer(media);
-                                                        mediaPlayer.setMute(true);
-                                                        mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-                                                        mediaPlayer.setAutoPlay(true);
-                                                        mediaView[videoSelected].setMediaPlayer(mediaPlayer);
-                                                        backToFourVideos();
-                                                        try {
-                                                            Thread.sleep(BUTTON_FREEZE_WAIT_BACK);
-                                                        } catch (InterruptedException interrupted) {
-                                                            if (isCancelled()) {
-                                                                System.out.println("Sleep thread cancelled!");
-                                                            }
-                                                        }
-                                                        animationFinished = true;
+                                                backToFourVideos();
+                                                try {
+                                                    Thread.sleep(BUTTON_FREEZE_WAIT_BACK);
+                                                } catch (InterruptedException interrupted) {
+                                                    if (isCancelled()) {
+                                                        System.out.println("Sleep thread cancelled!");
                                                     }
-                                                });
+                                                }
+                                                animationFinished = true;
                                             }
                                         });
-                                        //mediaPlayer[videoSelected].setMute(false);
-                                        mediaPlayer.setCycleCount(0);
-                                        mediaPlayer.play();
                                     }
-                            //    }
-                            //});
+                                });
+                                thumbMediaViews[videoSelected] = new MediaView(mediaPlayer);
+                                fourVideoPane.getChildren().add(thumbMediaViews[videoSelected]);
+                            }
                             return null;
                         }
                     };
                     new Thread(task).start();
+                    */
                     if( videoSelected != -1 ) {
                         backToFourVideos();
                     } else {
@@ -338,94 +304,67 @@ public class FourVideoInstallation extends Application {
     }
     
     private void backToFourVideos() {
-        // back to seeing all video thumbnail clips
-        ScaleTransition shrink = null;
-        ScaleTransition []grow = new ScaleTransition[3];
-        TranslateTransition move = 
-                new TranslateTransition(Duration.millis(ANIMATION_DURATION_SHORT),
-                        mediaView[videoSelected]);
-        double byX = extraTranslateX*(videoSelected%2==1?1:-1);
-        double byY = extraTranslateY*(videoSelected>1?1:-1);
-        move.setByX(byX);
-        move.setByY(byY);
-        System.out.println("Translating "+videoSelected+" by "+byX+" ,"+byY);
-        int count = 0;
-        int growCount = 0;
-        for( MediaView mv : mediaView ) {
-            if( (count++) == videoSelected ) {
-                shrink = new ScaleTransition(Duration.millis(ANIMATION_DURATION_SHORT),
-                        mv);
-                shrink.setToX(1.f);
-                shrink.setToY(1.f);
-            } else {
-                grow[growCount] = new ScaleTransition(Duration
-                        .millis(ANIMATION_DURATION_LONG), mv);
-                grow[growCount].setToX(1.f);
-                grow[growCount].setToY(1.f);
-                grow[growCount].setDelay(Duration.millis(ANIMATION_DURATION_SHORT));
-                growCount++;
-            }
+        // setup thumb video
+        //if( thumbMediaViews[videoSelected].getMediaPlayer() != null ) {
+        //    thumbMediaViews[videoSelected].getMediaPlayer().stop();
+        //}
+        fourVideoPane.getChildren().remove(mainMediaView);
+        mainMediaView.getMediaPlayer().dispose();
+        mainMediaView = null;
+        for( MediaView mv : thumbMediaViews ) {
+            mv.getMediaPlayer().play();
         }
-        scaleTransitions = new ParallelTransition();
-        scaleTransitions.getChildren().addAll(
-                grow[0],
-                grow[1],
-                grow[2],
-                shrink,
-                move
-        );
-        scaleTransitions.setCycleCount(1);
-        scaleTransitions.play();
+        // back to seeing all video thumbnail clips
+        moveVideos(true);
         videoSelected = -1;
     }
     
     private void expandAndPlayVideo(int vidNum) {
         // show video
         //mediaView[videoSelect].toFront();
-        ScaleTransition []shrink = new ScaleTransition[3];
-        ScaleTransition grow = null;
-        TranslateTransition move = 
-                new TranslateTransition(Duration.millis(ANIMATION_DURATION_LONG),
-                        mediaView[vidNum]);
-        move.setDelay(Duration.millis(ANIMATION_DURATION_SHORT));
-        double byX = extraTranslateX*(vidNum%2==1?-1:1);
-        double byY = extraTranslateY*(vidNum>1?-1:1);
-        move.setByX(byX);
-        move.setByY(byY);
-        System.out.println("Translating "+vidNum+" by "+byX+" ,"+byY);
-        int skrinkCount = 0;
-        for( int i = 0 ; i < 4 ; i++ ) {
-            if( i == vidNum ) {
-                grow = new ScaleTransition(Duration.millis(ANIMATION_DURATION_LONG),
-                        mediaView[i]);
-                grow.setToX(VIDEO_LARGE_SCALE_FACTOR);
-                grow.setToY(VIDEO_LARGE_SCALE_FACTOR);
-                grow.setDelay(Duration.millis(ANIMATION_DURATION_SHORT));
-                System.out.println("growing "+i);
-            } else {
-                shrink[skrinkCount] = new ScaleTransition(Duration
-                        .millis(ANIMATION_DURATION_SHORT),mediaView[i]);
-                shrink[skrinkCount].setToX(0.f);
-                shrink[skrinkCount].setToY(0.f);
-                skrinkCount++;
-            }
+        for( MediaView mv : thumbMediaViews ) {
+            mv.getMediaPlayer().pause();
         }
+        moveVideos(false);
+        videoSelected = vidNum;
+        Media media = null;
+        try {
+            media = new Media(new File(path+mediaUrls[videoSelected]).toURI().toURL().toExternalForm());
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        MediaPlayer mediaPlayer = new MediaPlayer(media);
+        mediaPlayer.setCycleCount(0);
+        mediaPlayer.setAutoPlay(true);
+        mainMediaView = new MediaView(mediaPlayer);
+        mainMediaView.setFitWidth(screenBounds.getWidth());
+        mainMediaView.relocate(0, 0);
+        fourVideoPane.getChildren().add(mainMediaView);
+    }
+    
+    private void moveVideos(boolean offScreen) {
+        TranslateTransition []move = new TranslateTransition[4];
+        for( int i = 0 ; i < 4 ; i++ ) {
+            move[i] = new TranslateTransition(Duration.millis(ANIMATION_DURATION),
+                        thumbMediaViews[i]);
+            move[i].setByX((offScreen?-1:1)*screenBounds.getWidth());
+        }
+        //System.out.println("Moving videos off screen");
+        // do it
         scaleTransitions = new ParallelTransition();
         scaleTransitions.getChildren().addAll(
-                shrink[0],
-                shrink[1],
-                shrink[2],
-                grow,
-                move
+                move[0],
+                move[1],
+                move[2],
+                move[3]
         );
         scaleTransitions.setCycleCount(1);
         scaleTransitions.play();
-        videoSelected = vidNum;
     }
     
     private void printMediaPlayerInfo() {
         int count = 0;
-            for( MediaView mv : mediaView ) {
+            for( MediaView mv : thumbMediaViews ) {
                 MediaPlayer.Status status = mv.getMediaPlayer().getStatus();
                 String statusStr = "Undefined";
                 if( status == MediaPlayer.Status.DISPOSED ) {
