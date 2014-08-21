@@ -20,6 +20,7 @@ import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
@@ -242,52 +243,12 @@ public class FourVideoInstallation extends Application {
                                     return null;
                                 }
                             }
-                            
                             animationFinished = true;
-                            if( videoSelected != -1 ) {
-                                System.out.println("Setting video "+videoSelected
-                                        +" for fullscreen playback");
-                                // stop and remove old media
-                                //thumbMediaViews[videoSelected].getMediaPlayer().stop();
-                                //fourVideoPane.getChildren().remove(thumbMediaViews[videoSelected]);
-                                // set new media for player
-                                Media media = null;
-                                try {
-                                    media = new Media(new File(path+mediaUrls[videoSelected]).toURI().toURL().toExternalForm());
-                                } catch (MalformedURLException ex) {
-                                    Logger.getLogger(FourVideoInstallation.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                                MediaPlayer mediaPlayer = new MediaPlayer(media);
-                                mediaPlayer.setCycleCount(0);
-                                mediaPlayer.setAutoPlay(true);
-                                mediaPlayer.setCycleCount(0);
-                                mediaPlayer.setOnEndOfMedia(new Runnable() {
-                                    @Override public void run() {
-                                        System.out.println("end of playback");
-                                        animationFinished = false;
-                                        Platform.runLater(new Runnable() {
-                                            @Override public void run() {
-                                                backToFourVideos();
-                                                try {
-                                                    Thread.sleep(BUTTON_FREEZE_WAIT_BACK);
-                                                } catch (InterruptedException interrupted) {
-                                                    if (isCancelled()) {
-                                                        System.out.println("Sleep thread cancelled!");
-                                                    }
-                                                }
-                                                animationFinished = true;
-                                            }
-                                        });
-                                    }
-                                });
-                                thumbMediaViews[videoSelected] = new MediaView(mediaPlayer);
-                                fourVideoPane.getChildren().add(thumbMediaViews[videoSelected]);
-                            }
                             return null;
                         }
                     };
-                    new Thread(task).start();
                     */
+                    //new Thread(task).start();
                     if( videoSelected != -1 ) {
                         backToFourVideos();
                     } else {
@@ -324,8 +285,9 @@ public class FourVideoInstallation extends Application {
             mv.getMediaPlayer().play();
         }
         // back to seeing all video thumbnail clips
-        moveVideos(true);
+        moveVideos(true).play();
         videoSelected = -1;
+        
     }
     
     private void expandAndPlayVideo(int vidNum) {
@@ -334,7 +296,7 @@ public class FourVideoInstallation extends Application {
         for( MediaView mv : thumbMediaViews ) {
             mv.getMediaPlayer().pause();
         }
-        moveVideos(false);
+        
         videoSelected = vidNum;
         Media media = null;
         try {
@@ -344,14 +306,27 @@ public class FourVideoInstallation extends Application {
         }
         MediaPlayer mediaPlayer = new MediaPlayer(media);
         mediaPlayer.setCycleCount(0);
-        mediaPlayer.setAutoPlay(true);
+        //mediaPlayer.setAutoPlay(true);
         mainMediaView = new MediaView(mediaPlayer);
         mainMediaView.setFitWidth(screenBounds.getWidth());
         mainMediaView.relocate(0, 0);
-        fourVideoPane.getChildren().add(mainMediaView);
+        //fourVideoPane.getChildren().add(mainMediaView);
+        moveVideos(false).setOnFinished(new EventHandler<ActionEvent>(){
+            @Override
+            public void handle(ActionEvent arg0) {
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        fourVideoPane.getChildren().add(mainMediaView);
+                        mediaPlayer.play();
+                    }
+                });
+            }
+        });
+        scaleTransitions.play();
     }
     
-    private void moveVideos(boolean offScreen) {
+    private ParallelTransition moveVideos(boolean offScreen) {
         TranslateTransition []move = new TranslateTransition[4];
         for( int i = 0 ; i < 4 ; i++ ) {
             move[i] = new TranslateTransition(Duration.millis(ANIMATION_DURATION),
@@ -368,7 +343,8 @@ public class FourVideoInstallation extends Application {
                 move[3]
         );
         scaleTransitions.setCycleCount(1);
-        scaleTransitions.play();
+        //scaleTransitions.play();
+        return scaleTransitions;
     }
     
     private void printMediaPlayerInfo() {
