@@ -7,7 +7,9 @@
 package fourvideoinstallation;
 
 import java.awt.AWTException;
+import java.awt.Dimension;
 import java.awt.Robot;
+import java.awt.Toolkit;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.Optional;
@@ -15,7 +17,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javafx.animation.ParallelTransition;
+import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
+import javafx.animation.SequentialTransition;
+import javafx.animation.Transition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -28,6 +33,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.effect.BlendMode;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
@@ -63,8 +69,6 @@ public class FourVideoInstallation extends Application {
     private float ANIMATION_DURATION = 500.f;
     
     private int videoSelected = -1;
-    
-    private ParallelTransition scaleTransitions;
     
     private final long BUTTON_FREEZE_WAIT_EXPAND = 2000; //millis
     private final long BUTTON_FREEZE_WAIT_BACK = 2000; //millis
@@ -126,8 +130,10 @@ public class FourVideoInstallation extends Application {
         fourVideoPane.setCursor(Cursor.NONE);
         
         // resize
-        Screen screen = Screen.getPrimary();
-        screenBounds = screen.getVisualBounds();
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        screenBounds = new Rectangle2D(0,0,dim.getWidth(),dim.getHeight());
+        //Screen screen = Screen.getPrimary();
+        //screenBounds = screen.getVisualBounds();
         stage.setX(0);
         stage.setY(0);
         stage.setWidth(screenBounds.getWidth());
@@ -283,6 +289,7 @@ public class FourVideoInstallation extends Application {
         mainMediaView = null;
         for( MediaView mv : thumbMediaViews ) {
             mv.getMediaPlayer().play();
+            mv.setBlendMode(BlendMode.SRC_OVER);
         }
         // back to seeing all video thumbnail clips
         moveVideos(true).play();
@@ -293,6 +300,7 @@ public class FourVideoInstallation extends Application {
     private void expandAndPlayVideo(int vidNum) {
         // show video
         //mediaView[videoSelect].toFront();
+        thumbMediaViews[vidNum].setBlendMode(BlendMode.BLUE);
         for( MediaView mv : thumbMediaViews ) {
             mv.getMediaPlayer().pause();
         }
@@ -311,7 +319,8 @@ public class FourVideoInstallation extends Application {
         mainMediaView.setFitWidth(screenBounds.getWidth());
         mainMediaView.relocate(0, 0);
         //fourVideoPane.getChildren().add(mainMediaView);
-        moveVideos(false).setOnFinished(new EventHandler<ActionEvent>(){
+        Transition transition = moveVideos(false);
+        transition.setOnFinished(new EventHandler<ActionEvent>(){
             @Override
             public void handle(ActionEvent arg0) {
                 Platform.runLater(new Runnable() {
@@ -323,10 +332,16 @@ public class FourVideoInstallation extends Application {
                 });
             }
         });
-        scaleTransitions.play();
+        transition.play();
     }
     
-    private ParallelTransition moveVideos(boolean offScreen) {
+    private Transition moveVideos(boolean offScreen) {
+        SequentialTransition seqTrans = new SequentialTransition();
+        if( !offScreen ) {
+            seqTrans.getChildren().add(
+                    new PauseTransition(Duration.millis(1000))
+            );
+        }
         TranslateTransition []move = new TranslateTransition[4];
         for( int i = 0 ; i < 4 ; i++ ) {
             move[i] = new TranslateTransition(Duration.millis(ANIMATION_DURATION),
@@ -335,16 +350,16 @@ public class FourVideoInstallation extends Application {
         }
         //System.out.println("Moving videos off screen");
         // do it
-        scaleTransitions = new ParallelTransition();
-        scaleTransitions.getChildren().addAll(
+        ParallelTransition moveTransitions = new ParallelTransition();
+        moveTransitions.getChildren().addAll(
                 move[0],
                 move[1],
                 move[2],
                 move[3]
         );
-        scaleTransitions.setCycleCount(1);
-        //scaleTransitions.play();
-        return scaleTransitions;
+        moveTransitions.setCycleCount(1);
+        seqTrans.getChildren().add(moveTransitions);
+        return seqTrans;
     }
     
     private void printMediaPlayerInfo() {
