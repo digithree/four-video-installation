@@ -301,9 +301,6 @@ public class FourVideoInstallation extends Application {
         // show video
         //mediaView[videoSelect].toFront();
         thumbMediaViews[vidNum].setBlendMode(BlendMode.BLUE);
-        for( MediaView mv : thumbMediaViews ) {
-            mv.getMediaPlayer().pause();
-        }
         
         videoSelected = vidNum;
         Media media = null;
@@ -314,6 +311,19 @@ public class FourVideoInstallation extends Application {
         }
         MediaPlayer mediaPlayer = new MediaPlayer(media);
         mediaPlayer.setCycleCount(0);
+        mediaPlayer.setOnEndOfMedia(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("video finished");
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("back to four videos");
+                        backToFourVideos();
+                    }
+                });
+            }
+        });
         //mediaPlayer.setAutoPlay(true);
         mainMediaView = new MediaView(mediaPlayer);
         mainMediaView.setFitWidth(screenBounds.getWidth());
@@ -323,9 +333,15 @@ public class FourVideoInstallation extends Application {
         transition.setOnFinished(new EventHandler<ActionEvent>(){
             @Override
             public void handle(ActionEvent arg0) {
+                System.out.println("transition finished");
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
+                        //pause videos
+                        for( MediaView mv : thumbMediaViews ) {
+                            mv.getMediaPlayer().pause();
+                        }
+                        //start selected video
                         fourVideoPane.getChildren().add(mainMediaView);
                         mediaPlayer.play();
                     }
