@@ -18,7 +18,6 @@ import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
-import javafx.animation.ScaleTransition;
 import javafx.animation.SequentialTransition;
 import javafx.animation.Transition;
 import javafx.animation.TranslateTransition;
@@ -27,8 +26,6 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.geometry.Bounds;
-import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
 import javafx.scene.Group;
@@ -36,13 +33,11 @@ import javafx.scene.Scene;
 import javafx.scene.effect.BlendMode;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.scene.paint.Color;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.controlsfx.dialog.Dialogs;
@@ -66,12 +61,11 @@ public class FourVideoInstallation extends Application {
         KeyCode.W, KeyCode.A, KeyCode.S, KeyCode.D
     };
     
-    private float ANIMATION_DURATION = 500.f;
+    private final float ANIMATION_DURATION = 500.f;
     
     private int videoSelected = -1;
     
-    private final long BUTTON_FREEZE_WAIT_EXPAND = 2000; //millis
-    private final long BUTTON_FREEZE_WAIT_BACK = 2000; //millis
+    private final long BUTTON_FREEZE_WAIT_EXPAND = 3000; //millis
     private boolean animationFinished = true;
     
     String path = null;
@@ -237,10 +231,10 @@ public class FourVideoInstallation extends Application {
                 // TODO : enable fourth video when given to us
                 // apply transition
                 if( videoSelect >= 0 && animationFinished ) {
-                    /*
                     Task<Void> task = new Task<Void>() {
                         @Override protected Void call() throws Exception {
                             animationFinished = false;
+                            //System.out.println("buttons locked");
                             try {
                                 Thread.sleep(BUTTON_FREEZE_WAIT_EXPAND);
                             } catch (InterruptedException interrupted) {
@@ -250,11 +244,11 @@ public class FourVideoInstallation extends Application {
                                 }
                             }
                             animationFinished = true;
+                            //System.out.println("buttons unlocked");
                             return null;
                         }
                     };
-                    */
-                    //new Thread(task).start();
+                    new Thread(task).start();
                     if( videoSelected != -1 ) {
                         backToFourVideos();
                     } else {
